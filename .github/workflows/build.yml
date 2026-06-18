@@ -21,15 +21,37 @@ jobs:
         sed -i "s|moduleDescription = \"|moduleDescription = \"(${{ github.event.inputs.package_name }}) |g" module.gradle
         sed -i "s|com.game.packagename|${{ github.event.inputs.package_name }}|g" module/src/main/cpp/game.h
         ./gradlew :module:assembleRelease
+    - name: Find and list all generated files
+      run: |
+        echo "=== 查找所有 .zip 文件 ==="
+        find . -name "*.zip" -type f 2>/dev/null | while read -r file; do
+          echo "找到: $file"
+          ls -lh "$file"
+        done
+        echo ""
+        echo "=== 查找所有 .apk 文件 ==="
+        find . -name "*.apk" -type f 2>/dev/null | while read -r file; do
+          echo "找到: $file"
+          ls -lh "$file"
+        done
+        echo ""
+        echo "=== 检查 module/build/outputs ==="
+        ls -la module/build/outputs/ 2>/dev/null || echo "目录不存在"
+        if [ -d "module/build/outputs" ]; then
+          find module/build/outputs -type f 2>/dev/null | head -20
+        fi
+        echo ""
+        echo "=== 检查整个 module/build 目录下的文件 ==="
+        find module/build -type f 2>/dev/null | head -30
     - name: Create Release and Upload
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.event.inputs.package_name }}-${{ github.run_number }}
-        name: Release ${{ github.event.inputs.package_name }}
+        name: ${{ github.event.inputs.package_name }}
         files: |
-          out/magisk_module_release/*.zip
-          out/magisk_module_release/*.apk
-        draft: false
-        prerelease: false
+          **/*.zip
+          **/*.apk
+          **/*.magisk
+        fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
